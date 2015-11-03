@@ -15,17 +15,18 @@ class SeedPacket {
 
 public:
 
-    uint8_t destinationMac[6];
-    uint8_t sourceMac[6];
-    uint16_t protocolType = htons(0x1122);
+    uint8_t DestinationMac[6];
+    uint8_t SourceMac[6];
+    uint16_t ProtocolType = 0x1122;
 
     // 8-byte flags.
-    uint32_t flags;
-    uint32_t sessionId;
+    uint32_t Flags;
+    uint32_t SessionId;
 
-    uint8_t tlvs[1024];
+    uint8_t Tlvs[1024];
 
     SeedPacket();
+    SeedPacket(const u_char* data);
 
     uint8_t GetType();
     bool IsBeginning();
@@ -35,9 +36,12 @@ public:
     void SetDestinationMac(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, uint8_t f);
     void SetSourceMac(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, uint8_t f);
 
-    // TODO: Implementation.
+    void SetType(int8_t type);
     void SetBeginning(bool isBeginning);
     void SetEnding(bool isEnding);
+    void SetPartId(int32_t partId);
+
+    void Cook();
 
 };
 
