@@ -3,5 +3,8 @@ project(SeedCSISMP)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lpcap")
 
-set(SOURCE_FILES main.cpp SeedPacket.cpp SeedPacket.h)
+set(SOURCE_FILES main.cpp SeedPacket.cpp SeedPacket.h SeedConfig.cpp SeedConfig.h)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+
 add_executable(SeedCup ${SOURCE_FILES})
