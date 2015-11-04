@@ -2,11 +2,17 @@
 // Created by evshiron on 11/3/15.
 //
 
+#include <time.h>
+#include <string>
+
+#include <vector>
 #include <iostream>
-#include <functional>
+#include <fstream>
 
 #include "SeedCommandCenter.h"
 #include "SeedPacket.h"
+
+#define FILE_STUINFO "../StuInfo.txt"
 
 #define PACKET_TYPE_ADD 1
 #define PACKET_TYPE_DEL 2
@@ -18,6 +24,10 @@
 #define TLV_TYPE_NAME 2
 #define TLV_TYPE_FACULTY 3
 
+#define LENGTH_FACULTY 33
+#define LENGTH_NO 14
+#define LENGTH_NAME 24
+
 #define FATAL(x) { cerr << x << endl; exit(1); }
 
 SeedCommandCenter::SeedCommandCenter(const char* dev, SeedConfig& config) {
@@ -27,6 +37,127 @@ SeedCommandCenter::SeedCommandCenter(const char* dev, SeedConfig& config) {
     Handle = pcap_create(dev, mErrbuf);
 
     if(!Handle) FATAL("ERROR_PCAP_CREATE_FAILED");
+
+}
+
+void SeedCommandCenter::OutputSInfo() {
+
+    map<string, SeedSInfo*> sInfo;
+
+    for(auto it = RemoteSInfo.begin(); it != RemoteSInfo.end(); it++) {
+
+        sInfo[(*it).first] = (*it).second;
+
+    }
+
+    for(auto it = LocalSInfo.begin(); it != LocalSInfo.end(); it++) {
+
+        sInfo[(*it).first] = (*it).second;
+
+    }
+
+    vector<pair<string, SeedSInfo*>> ssInfo;
+
+    for(auto it = sInfo.begin(); it != sInfo.end(); it++) {
+
+        ssInfo.push_back(*it);
+
+    }
+
+    // TODO: Check if this works as expected.
+    sort(ssInfo.begin(), ssInfo.end(), [&](pair<string, SeedSInfo*> a, pair<string, SeedSInfo*> b) -> bool {
+
+        bool result = false;
+
+        int facultyResult = strcmp(a.second->Faculty.c_str(), b.second->Faculty.c_str());
+
+        if(facultyResult > 0) {
+
+            result = true;
+
+        }
+        else if(facultyResult < 0) {
+
+            result = false;
+
+        }
+        else {
+
+            int noResult = strcmp(a.second->No.c_str(), b.second->No.c_str());
+
+            if(noResult > 0) {
+
+                result = true;
+
+            }
+            else if(noResult < 0) {
+
+                result = false;
+
+            }
+            else {
+
+                int nameResult = strcmp(a.second->Name.c_str(), b.second->Name.c_str());
+
+                if(nameResult > 0) {
+
+                    result = true;
+
+                }
+                else if(nameResult < 0) {
+
+                    result = false;
+
+                }
+                else {
+
+                    FATAL("ERROR_COMPARE_UNEXPECTED");
+
+                }
+
+            }
+
+        }
+
+        return result;
+
+    });
+
+    ofstream ofs(FILE_STUINFO, ios::app);
+
+    time_t rawNow = time(0);
+    char strNow[9];
+    strftime(strNow, 9, "%X", localtime(&rawNow));
+
+    ofs << "Time : " << strNow << endl;
+    ofs << "Faculty" << string(LENGTH_FACULTY - 7 + 3, ' ');
+    ofs << "Student ID" << string(LENGTH_NO - 10 + 3, ' ');
+    ofs << "Name" << string(LENGTH_NAME - 4 + 3, ' ') << endl;
+    ofs << string(80, '-') << endl;
+
+    for(auto it = ssInfo.begin(); it != ssInfo.end(); it++) {
+
+        string no((*it).second->No);
+        string name((*it).second->Name);
+        string faculty((*it).second->Faculty);
+
+        for(int i = 0; i < faculty.length(); i++) {
+
+            if(i != 0 && i % LENGTH_FACULTY == 0) ofs << endl;
+            ofs << faculty[i];
+
+        }
+        ofs << string(LENGTH_FACULTY - faculty.length() % LENGTH_FACULTY + 3, ' ');
+
+        ofs << no << string(LENGTH_NO - no.length() % LENGTH_NO + 3, ' ');
+        ofs << name << string(LENGTH_NAME - name.length() % LENGTH_NAME + 3, ' ') << endl;
+
+    }
+
+    ofs << string(80, '-') << endl << endl;
+
+    ofs.flush();
+    ofs.close();
 
 }
 
@@ -109,6 +240,10 @@ void SeedCommandCenter::listen() {
 
 void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
+    string no;
+    string name;
+    string faculty;
+
     switch(session->Type) {
         case PACKET_TYPE_ADD:
 
@@ -125,6 +260,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                 switch(tlvs[i]) {
                     case TLV_TYPE_NO:
 
+                        no = string(&tlvs[i+2]);
                         cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
 
@@ -132,6 +268,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
                     case TLV_TYPE_NAME:
 
+                        name = string(&tlvs[i+2]);
                         cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
 
@@ -139,8 +276,11 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
                     case TLV_TYPE_FACULTY:
 
+                        faculty = string(&tlvs[i+2]);
                         cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
+
+                        LocalSInfo[no] = new SeedSInfo(no, name, faculty);
 
                         break;
 
@@ -152,6 +292,10 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                 }
 
             }
+
+            cout << "Added." << endl;
+
+            OutputSInfo();
 
             break;
         case PACKET_TYPE_DEL:

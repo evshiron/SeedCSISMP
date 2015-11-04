@@ -12,6 +12,7 @@
 
 #include "SeedConfig.h"
 #include "SeedSession.h"
+#include "SeedSInfo.h"
 
 class SeedCommandCenter {
 
@@ -21,7 +22,12 @@ public:
 
     map<uint32_t, SeedSession*> Sessions;
 
+    map<string, SeedSInfo*> LocalSInfo;
+    map<string, SeedSInfo*> RemoteSInfo;
+
     SeedCommandCenter(const char* dev, SeedConfig& config);
+
+    void OutputSInfo();
 
     void Start();
 

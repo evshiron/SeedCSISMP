@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <regex>
+#include <fstream>
 
 #define FATAL(x) { cerr << x << endl; exit(1); }
 
@@ -52,6 +53,15 @@ string SeedConfig::ToString() {
     }
 
     return out;
+
+}
+
+void SeedConfig::Output() {
+
+    ofstream ofs(FILE_CFGINFO, ios::trunc);
+    ofs << ToString() << endl;
+    ofs.flush();
+    ofs.close();
 
 }
 

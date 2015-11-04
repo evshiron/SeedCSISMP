@@ -8,6 +8,9 @@
 #include <string>
 #include <list>
 
+#define FILE_CONFIG "../Config.txt"
+#define FILE_CFGINFO "../CfgInfo.txt"
+
 using namespace std;
 
 class SeedConfig {
@@ -18,8 +21,10 @@ public:
     list<string> DestinationMacs;
 
     SeedConfig(const char* path);
+    SeedConfig() : SeedConfig(FILE_CONFIG) {}
 
     string ToString();
+    void Output();
 
 private:
 
