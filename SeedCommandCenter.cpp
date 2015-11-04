@@ -56,7 +56,7 @@ void SeedCommandCenter::listen() {
     pcap_pkthdr* header;
     const u_char* data;
 
-    SeedPacket packetReceived;
+    SeedPacket* packet;
 
     while(!mIsStopped) {
 
@@ -68,20 +68,20 @@ void SeedCommandCenter::listen() {
 
                 cout << "Pcap captured." << endl;
 
-                packetReceived = SeedPacket(data);
+                packet = new SeedPacket(data);
 
-                cout << (int) packetReceived.GetType() << endl;
-                cout << packetReceived.IsBeginning() << endl;
-                cout << packetReceived.IsEnding() << endl;
-                cout << packetReceived.GetPartId() << endl;
+                dispatchPacket(packet);
+
                 break;
 
             case -1:
 
-                cout << "Pcap capture failed." << endl;
-                cout << pcap_geterr(Handle) << endl;
+                cerr << pcap_geterr(Handle) << endl;
                 pcap_perror(Handle, mErrbuf);
-                cout << mErrbuf << endl;
+                cerr << mErrbuf << endl;
+
+                FATAL("ERROR_PCAP_CAPTURE_FAILED");
+
                 break;
 
             case 0:
@@ -97,8 +97,67 @@ void SeedCommandCenter::listen() {
 
 }
 
+void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
+
+    for(int i = 0; i < 128 * 1024; i++) {
+
+        if(tlvs[i] == 0 && tlvs[i+1] == 0 && tlvs[i+2] == 0) {
+
+            break;
+
+        }
+
+        switch(tlvs[i]) {
+            case 1:
+
+                cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                i += 1 + tlvs[i+1];
+
+                break;
+
+            case 2:
+
+                cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                i += 1 + tlvs[i+1];
+
+                break;
+
+            case 3:
+
+                cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                i += 1 + tlvs[i+1];
+
+                break;
+
+            case 0:
+            default:
+
+                FATAL("ERROR_COLLECT_UNEXPECTED");
+
+        }
+
+    }
+
+}
+
 void SeedCommandCenter::Stop() {
 
     mIsStopped = true;
+
+    mListener->join();
+
+}
+
+void SeedCommandCenter::dispatchPacket(SeedPacket* packet) {
+
+    if(Sessions.count(packet->SessionId) == 0) {
+
+        Sessions[packet->SessionId] = new SeedSession(this, packet->SessionId);
+
+    }
+
+    SeedSession* session = Sessions[packet->SessionId];
+
+    session->Consume(packet);
 
 }
