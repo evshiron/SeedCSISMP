@@ -9,9 +9,11 @@
 
 #define FATAL(x) { cerr << x << endl; exit(1); }
 
-SeedSession::SeedSession(SeedCommandCenter* cc, uint32_t sessionId) {
+SeedSession::SeedSession(SeedCommandCenter* cc, uint8_t type, uint32_t sessionId) {
 
     CC = cc;
+
+    Type = type;
 
     SessionId = sessionId;
 

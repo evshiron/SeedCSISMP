@@ -8,6 +8,16 @@
 #include "SeedCommandCenter.h"
 #include "SeedPacket.h"
 
+#define PACKET_TYPE_ADD 1
+#define PACKET_TYPE_DEL 2
+#define PACKET_TYPE_ACK 3
+#define PACKET_TYPE_RJT 4
+#define PACKET_TYPE_SYNC 5
+
+#define TLV_TYPE_NO 1
+#define TLV_TYPE_NAME 2
+#define TLV_TYPE_FACULTY 3
+
 #define FATAL(x) { cerr << x << endl; exit(1); }
 
 SeedCommandCenter::SeedCommandCenter(const char* dev, SeedConfig& config) {
@@ -99,43 +109,90 @@ void SeedCommandCenter::listen() {
 
 void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
-    for(int i = 0; i < 128 * 1024; i++) {
+    switch(session->Type) {
+        case PACKET_TYPE_ADD:
 
-        if(tlvs[i] == 0 && tlvs[i+1] == 0 && tlvs[i+2] == 0) {
+            cout << "Adding: " << endl;
+
+            for(int i = 0; i < 128 * 1024; i++) {
+
+                if(tlvs[i] == 0 && tlvs[i+1] == 0 && tlvs[i+2] == 0) {
+
+                    break;
+
+                }
+
+                switch(tlvs[i]) {
+                    case TLV_TYPE_NO:
+
+                        cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                        i += 1 + tlvs[i+1];
+
+                        break;
+
+                    case TLV_TYPE_NAME:
+
+                        cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                        i += 1 + tlvs[i+1];
+
+                        break;
+
+                    case TLV_TYPE_FACULTY:
+
+                        cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                        i += 1 + tlvs[i+1];
+
+                        break;
+
+                    case 0:
+                    default:
+
+                        FATAL("ERROR_COLLECT_UNEXPECTED");
+
+                }
+
+            }
 
             break;
+        case PACKET_TYPE_DEL:
 
-        }
+            cout << "Deleting: " << endl;
 
-        switch(tlvs[i]) {
-            case 1:
+            for(int i = 0; i < 128 * 1024; i++) {
 
-                cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
-                i += 1 + tlvs[i+1];
+                if(tlvs[i] == 0 && tlvs[i+1] == 0 && tlvs[i+2] == 0) {
 
-                break;
+                    break;
 
-            case 2:
+                }
 
-                cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
-                i += 1 + tlvs[i+1];
+                switch(tlvs[i]) {
+                    case TLV_TYPE_NO:
 
-                break;
+                        cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                        i += 1 + tlvs[i+1];
 
-            case 3:
+                        break;
 
-                cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
-                i += 1 + tlvs[i+1];
+                    case 0:
+                    default:
 
-                break;
+                        FATAL("ERROR_COLLECT_UNEXPECTED");
 
-            case 0:
-            default:
+                }
 
-                FATAL("ERROR_COLLECT_UNEXPECTED");
+            }
 
-        }
-
+            break;
+        case PACKET_TYPE_ACK:
+            break;
+        case PACKET_TYPE_RJT:
+            break;
+        case PACKET_TYPE_SYNC:
+            break;
+        default:
+            cout << "WARNING_TYPE_UNKNOWN";
+            break;
     }
 
 }
@@ -152,7 +209,7 @@ void SeedCommandCenter::dispatchPacket(SeedPacket* packet) {
 
     if(Sessions.count(packet->SessionId) == 0) {
 
-        Sessions[packet->SessionId] = new SeedSession(this, packet->SessionId);
+        Sessions[packet->SessionId] = new SeedSession(this, packet->GetType(), packet->SessionId);
 
     }
 

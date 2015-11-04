@@ -22,11 +22,13 @@ public:
 
     SeedCommandCenter* CC;
 
+    uint8_t Type;
+
     uint32_t SessionId;
 
     map<uint32_t, SeedPacket*> Packets;
 
-    SeedSession(SeedCommandCenter* cc, uint32_t sessionId);
+    SeedSession(SeedCommandCenter* cc, uint8_t sessionType, uint32_t sessionId);
 
     void Consume(SeedPacket* packet);
 
