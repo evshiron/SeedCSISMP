@@ -14,8 +14,8 @@ SeedPacket::SeedPacket() {
 
 SeedPacket::SeedPacket(const u_char* data) {
 
-    cout << "Size of data: " << sizeof(SeedPacket) << endl;
-
+    // FIXME: Dirty implementation.
+    // As we don't care about everything after the Tlvs.
     memcpy(this, data, sizeof(SeedPacket));
 
     ProtocolType = ntohs(ProtocolType);
@@ -44,7 +44,7 @@ bool SeedPacket::IsEnding() {
 
 }
 
-int SeedPacket::GetPartId() {
+uint32_t SeedPacket::GetPartId() {
 
     return Flags << 10 >> 10;
 
@@ -92,9 +92,9 @@ void SeedPacket::SetEnding(bool isEnding) {
 
 }
 
-void SeedPacket::SetPartId(int32_t partId) {
+void SeedPacket::SetPartId(uint32_t partId) {
 
-    int32_t flags = Flags >> 22 << 22;
+    uint32_t flags = Flags >> 22 << 22;
 
     flags += partId << 10 >> 10;
 
@@ -109,5 +109,14 @@ void SeedPacket::Cook() {
     Flags = htonl(Flags);
 
     SessionId = htonl(SessionId);
+
+}
+
+void SeedPacket::Print() {
+
+    cerr << "Type: " << (int) GetType() << endl;
+    cerr << "IsBeginning: " << IsBeginning() << endl;
+    cerr << "IsEnding: " << IsEnding() << endl;
+    cerr << "PartId: " << GetPartId() << endl;
 
 }

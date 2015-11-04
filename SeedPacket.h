@@ -31,7 +31,7 @@ public:
     uint8_t GetType();
     bool IsBeginning();
     bool IsEnding();
-    int GetPartId();
+    uint32_t GetPartId();
 
     void SetDestinationMac(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, uint8_t f);
     void SetSourceMac(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint8_t e, uint8_t f);
@@ -39,9 +39,11 @@ public:
     void SetType(int8_t type);
     void SetBeginning(bool isBeginning);
     void SetEnding(bool isEnding);
-    void SetPartId(int32_t partId);
+    void SetPartId(uint32_t partId);
 
     void Cook();
+
+    void Print();
 
 };
 
