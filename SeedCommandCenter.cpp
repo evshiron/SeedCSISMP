@@ -165,7 +165,7 @@ void SeedCommandCenter::Start() {
 
     mIsStopped = false;
 
-    pcap_set_buffer_size(Handle, BUFSIZ);
+    pcap_set_buffer_size(Handle, sizeof(SeedPacket));
     pcap_set_promisc(Handle, true);
     //pcap_set_rfmon(Handle, true);
 
