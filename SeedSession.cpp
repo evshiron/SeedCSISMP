@@ -125,8 +125,8 @@ char* SeedSession::assemble() {
 
         for(int j = 0; j < 1021; j++) {
 
-            // If the current is the ending \0.
-            if(packet->Tlvs[j] == 0 && packet->Tlvs[j+1] == 0 && packet->Tlvs[j+2] == 0) {
+            // If the current is the ending type.
+            if(packet->Tlvs[j-1] == 0 && packet->Tlvs[j] == 0 && packet->Tlvs[j+1] == 0) {
 
                 memcpy(assembly + offset, &packet->Tlvs, j);
                 offset += j;

@@ -124,7 +124,8 @@ void SeedCommandCenter::OutputSInfo() {
 
     time_t rawNow = time(0);
     char strNow[9];
-    strftime(strNow, 9, "%X", localtime(&rawNow));
+    tm now = *localtime(&rawNow);
+    strftime(strNow, 9, "%X", &now);
 
     ofs << "Time : " << strNow << endl;
     ofs << "Faculty" << string(LENGTH_FACULTY - 7 + 3, ' ');
@@ -222,7 +223,11 @@ void SeedCommandCenter::listen() {
 
                 cout << "Pcap captured." << endl;
 
-                packet = new SeedPacket(data);
+                if(header->caplen < header->len) FATAL("ERROR_CAPTURE_PART");
+
+                u_char copy[1046];
+                memcpy(copy, data, header->len);
+                packet = new SeedPacket((const u_char*) copy);
 
                 // Packet filter.
                 switch(packet->GetType()) {
@@ -362,7 +367,8 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
             cout << "Added." << endl;
 
-            OutputSInfo();
+            // FIXME: Cause crashes.
+            //OutputSInfo();
 
             break;
         case PACKET_TYPE_DEL:
@@ -371,7 +377,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
             for(int i = 0; i < 128 * 1024; i++) {
 
-                if(tlvs[i] == 0 && tlvs[i+1] == 0 && tlvs[i+2] == 0) {
+                if(tlvs[i] == 0 && tlvs[i+1] == 0) {
 
                     break;
 
