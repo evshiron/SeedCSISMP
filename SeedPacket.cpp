@@ -10,6 +10,8 @@ using namespace std;
 
 SeedPacket::SeedPacket() {
 
+    memset(&(this->Tlvs), '\0', 1024);
+
 }
 
 SeedPacket::SeedPacket(const u_char* data) {

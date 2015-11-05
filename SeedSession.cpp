@@ -125,10 +125,11 @@ char* SeedSession::assemble() {
 
         for(int j = 0; j < 1021; j++) {
 
-            if(packet->Tlvs[j+1] == 0 && packet->Tlvs[j+2] == 0 && packet->Tlvs[j+3] == 0) {
+            // If the current is the ending \0.
+            if(packet->Tlvs[j] == 0 && packet->Tlvs[j+1] == 0 && packet->Tlvs[j+2] == 0) {
 
-                memcpy(assembly + offset, &packet->Tlvs, j+1);
-                offset += j+1;
+                memcpy(assembly + offset, &packet->Tlvs, j);
+                offset += j;
                 break;
 
             }
@@ -137,8 +138,8 @@ char* SeedSession::assemble() {
 
     }
 
-    memcpy(assembly + offset, "\0\0\0", 3);
-    offset += 3;
+    memset(assembly + offset, '\0', 2);
+    offset += 2;
 
     cout << "Assembly size: " << offset - 1 << endl;
 

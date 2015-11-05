@@ -13,16 +13,7 @@
 #include "SeedPacket.h"
 
 #define FILE_STUINFO "../StuInfo.txt"
-
-#define PACKET_TYPE_ADD 1
-#define PACKET_TYPE_DEL 2
-#define PACKET_TYPE_ACK 3
-#define PACKET_TYPE_RJT 4
-#define PACKET_TYPE_SYNC 5
-
-#define TLV_TYPE_NO 1
-#define TLV_TYPE_NAME 2
-#define TLV_TYPE_FACULTY 3
+#define MAC_SYNC_DESTINATION "0x0180C2DDFEFF"
 
 #define LENGTH_FACULTY 33
 #define LENGTH_NO 14
@@ -31,6 +22,12 @@
 #define FATAL(x) { cerr << x << endl; exit(1); }
 
 SeedCommandCenter::SeedCommandCenter(const char* dev, SeedConfig& config) {
+
+    convertMac(config.LocalMac, LocalMac);
+
+    int i = 0;
+    for(auto it = config.DestinationMacs.begin(); it != config.DestinationMacs.end(); it++) convertMac(*it, DestinationMacs[i++]);
+    DestinationMacCount = i;
 
     mErrbuf = new char[PCAP_ERRBUF_SIZE];
 
@@ -186,6 +183,22 @@ void SeedCommandCenter::Start() {
 
 }
 
+void SeedCommandCenter::convertMac(string source, uint8_t* out) {
+
+    for(int i = 0; i < source.length(); i+=3) {
+
+        sscanf(source.c_str() + i, "%2hhx", out++);
+
+    }
+
+}
+
+int SeedCommandCenter::compareMac(uint8_t* a, uint8_t* b) {
+
+    return memcmp(a, b, 6);
+
+}
+
 void SeedCommandCenter::listen() {
 
     bpf_program filter;
@@ -197,7 +210,7 @@ void SeedCommandCenter::listen() {
     pcap_pkthdr* header;
     const u_char* data;
 
-    SeedPacket* packet;
+    SeedPacket* packet = 0;
 
     while(!mIsStopped) {
 
@@ -211,7 +224,50 @@ void SeedCommandCenter::listen() {
 
                 packet = new SeedPacket(data);
 
-                dispatchPacket(packet);
+                // Packet filter.
+                switch(packet->GetType()) {
+
+                    case PACKET_TYPE_ADD:
+                    case PACKET_TYPE_DEL:
+
+                        for(int i = 0; i < DestinationMacCount; i++) {
+
+                            if(compareMac(packet->DestinationMac, DestinationMacs[i]) == 0) {
+
+                                acceptPacket(packet);
+                                dispatchPacket(packet);
+                                goto FINISH_PACKET;
+
+                            }
+
+                        }
+
+                        goto REJECT_PACKET;
+
+                    case PACKET_TYPE_ACK:
+                    case PACKET_TYPE_RJT:
+
+                        break;
+
+                    case PACKET_TYPE_SYNC:
+
+                        if(compareMac(packet->DestinationMac, (uint8_t*) MAC_SYNC_DESTINATION) == 0) {
+
+                            acceptPacket(packet);
+                            dispatchPacket(packet);
+                            break;
+
+                        }
+
+                        goto REJECT_PACKET;
+
+                    default:
+                    REJECT_PACKET:
+
+                        rejectPacket(packet);
+                        break;
+
+                }
 
                 break;
 
@@ -232,6 +288,15 @@ void SeedCommandCenter::listen() {
 
         }
 
+        FINISH_PACKET:
+
+            if(packet != 0) {
+
+                delete packet;
+                packet = 0;
+
+            }
+
     }
 
     pcap_close(Handle);
@@ -247,11 +312,13 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
     switch(session->Type) {
         case PACKET_TYPE_ADD:
 
-            cout << "Adding: " << endl;
+            cout << "Adding." << endl;
 
             for(int i = 0; i < 128 * 1024; i++) {
 
-                if(tlvs[i] == 0 && tlvs[i+1] == 0 && tlvs[i+2] == 0) {
+                // Current must be the tlv type.
+
+                if(tlvs[i] == 0 && tlvs[i+1] == 0) {
 
                     break;
 
@@ -346,6 +413,40 @@ void SeedCommandCenter::Stop() {
     mIsStopped = true;
 
     mListener->join();
+
+}
+
+void SeedCommandCenter::acceptPacket(SeedPacket* packet) {
+
+    SeedPacket ack;
+    ack.SetDestinationMac(packet->DestinationMac);
+    ack.SetSourceMac(LocalMac);
+    ack.SetType(PACKET_TYPE_ACK);
+    ack.SetBeginning(packet->IsBeginning());
+    ack.SetEnding(packet->IsEnding());
+    ack.SetPartId(packet->GetPartId());
+    ack.SessionId = packet->SessionId;
+
+    ack.Cook();
+
+    pcap_inject(Handle, &ack, 24);
+
+}
+
+void SeedCommandCenter::rejectPacket(SeedPacket* packet) {
+
+    SeedPacket rjt;
+    rjt.SetDestinationMac(packet->DestinationMac);
+    rjt.SetSourceMac(LocalMac);
+    rjt.SetType(PACKET_TYPE_RJT);
+    rjt.SetBeginning(packet->IsBeginning());
+    rjt.SetEnding(packet->IsEnding());
+    rjt.SetPartId(packet->GetPartId());
+    rjt.SessionId = packet->SessionId;
+
+    rjt.Cook();
+
+    pcap_inject(Handle, &rjt, 24);
 
 }
 
