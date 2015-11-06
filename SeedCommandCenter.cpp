@@ -70,12 +70,12 @@ void SeedCommandCenter::OutputSInfo() {
 
         if(facultyResult > 0) {
 
-            result = true;
+            result = false;
 
         }
         else if(facultyResult < 0) {
 
-            result = false;
+            result = true;
 
         }
         else {
@@ -84,12 +84,12 @@ void SeedCommandCenter::OutputSInfo() {
 
             if(noResult > 0) {
 
-                result = true;
+                result = false;
 
             }
             else if(noResult < 0) {
 
-                result = false;
+                result = true;
 
             }
             else {
@@ -98,12 +98,12 @@ void SeedCommandCenter::OutputSInfo() {
 
                 if(nameResult > 0) {
 
-                    result = true;
+                    result = false;
 
                 }
                 else if(nameResult < 0) {
 
-                    result = false;
+                    result = true;
 
                 }
                 else {
@@ -365,7 +365,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
             cout << "Added." << endl;
 
             // FIXME: Cause crashes.
-            //OutputSInfo();
+            OutputSInfo();
 
             break;
         case PACKET_TYPE_DEL:
