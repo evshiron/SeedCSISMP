@@ -308,6 +308,13 @@ void SeedCommandCenter::listen() {
 
 }
 
+void SeedCommandCenter::Abort(SeedSession *session) {
+
+    Sessions.erase(session->SessionId);
+    delete session;
+
+}
+
 void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
     string no;
@@ -414,6 +421,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
     delete[] tlvs;
     Sessions.erase(session->SessionId);
+    delete session;
 
 }
 

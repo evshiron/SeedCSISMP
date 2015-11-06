@@ -40,10 +40,6 @@ private:
     bool mIsCompleted;
     bool mIsAborted;
 
-    thread* mUpdater;
-
-    void update();
-
     char* assemble();
 
 };

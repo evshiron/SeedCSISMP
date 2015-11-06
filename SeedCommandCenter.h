@@ -40,6 +40,7 @@ public:
     void AcceptPacket(SeedPacket *packet);
     void RejectPacket(SeedPacket *packet);
 
+    void Abort(SeedSession* session);
     void Collect(SeedSession* session, char* tlvs);
 
     void Stop();

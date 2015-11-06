@@ -21,12 +21,6 @@ SeedSession::SeedSession(SeedCommandCenter* cc, uint8_t type, uint32_t sessionId
     mIsCompleted = false;
     mIsAborted = false;
 
-    mUpdater = new thread([&]() {
-
-        update();
-
-    });
-
 }
 
 void SeedSession::Consume(SeedPacket* packet) {
@@ -76,30 +70,22 @@ void SeedSession::Consume(SeedPacket* packet) {
 
     }
 
-}
+    if(mPartCount > 0) {
 
-void SeedSession::update() {
+        bool isCompleted = true;
 
-    while(!mIsCompleted && !mIsAborted) {
+        for(uint32_t i = 0; i < mPartCount; i++) {
 
-        if(mPartCount > 0) {
+            if(Packets.count(i) == 0) {
 
-            bool isCompleted = true;
-
-            for(uint32_t i = 0; i < mPartCount; i++) {
-
-                if(Packets.count(i) == 0) {
-
-                    isCompleted = false;
-                    break;
-
-                }
+                isCompleted = false;
+                break;
 
             }
 
-            mIsCompleted = isCompleted;
-
         }
+
+        mIsCompleted = isCompleted;
 
     }
 
@@ -107,8 +93,11 @@ void SeedSession::update() {
 
         cout << "Session " << SessionId << " aborted." << endl;
 
+        CC->Abort(this);
+
     }
-    else if(mIsCompleted) {
+
+    if(mIsCompleted) {
 
         cout << "Session " << SessionId << " completed." << endl;
 
@@ -117,13 +106,6 @@ void SeedSession::update() {
         CC->Collect(this, tlvs);
 
     }
-    else {
-
-        FATAL("ERROR_UPDATE_UNDEFINED");
-
-    }
-
-    delete this;
 
 }
 
