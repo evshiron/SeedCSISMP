@@ -435,9 +435,14 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                         break;
 
                     case 0:
+
+                        FATAL("ERROR_TLV_TYPE_UNEXPECTED");
+
                     default:
 
-                        FATAL("ERROR_COLLECT_UNEXPECTED");
+                        RejectSession(session, 0, "REJECT_TLV_TYPE_UNKNOWN");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        goto CLEAN_SESSION;
 
                 }
 
@@ -497,9 +502,13 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                         break;
 
                     case 0:
+
+                        FATAL("ERROR_TLV_TYPE_UNEXPECTED");
+
                     default:
 
-                        FATAL("ERROR_COLLECT_UNEXPECTED");
+                        RejectSession(session, 0, "REJECT_TLV_TYPE_UNKNOWN");
+                        goto CLEAN_SESSION;
 
                 }
 
