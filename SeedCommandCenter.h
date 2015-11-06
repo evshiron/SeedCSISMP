@@ -37,8 +37,10 @@ public:
 
     void Start();
 
-    void AcceptPacket(SeedPacket *packet);
-    void RejectPacket(SeedPacket *packet);
+    //void AcceptPacket(SeedPacket *packet);
+    //void RejectPacket(SeedPacket *packet);
+    void AcceptSession(SeedSession* session);
+    void RejectSession(SeedSession* session, SeedPacket* packet, string reason);
 
     void Abort(SeedSession* session);
     void Collect(SeedSession* session, char* tlvs);

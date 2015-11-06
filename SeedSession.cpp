@@ -31,6 +31,10 @@ void SeedSession::Consume(SeedPacket* packet) {
 
         cout << "Packet collected by session " << SessionId << "." << endl;
 
+        if(distance(Packets.begin(), Packets.end()) == 0) {
+
+        }
+
         if(packet->IsBeginning() && packet->IsEnding()) {
 
             Packets[packet->GetPartId()] = packet;
@@ -52,7 +56,8 @@ void SeedSession::Consume(SeedPacket* packet) {
             // Check if the PartId is beyond PartCount.
             if(mPartCount > 0 && packet->GetPartId() >= mPartCount) {
 
-                CC->RejectPacket(packet);
+                //CC->RejectPacket(packet);
+                CC->RejectSession(this, packet, "REJECT_PACKET_PART_ID_UNEXPECTED");
                 delete packet;
 
             }

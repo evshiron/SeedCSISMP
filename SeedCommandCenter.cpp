@@ -239,7 +239,7 @@ void SeedCommandCenter::listen() {
 
                             if(compareMac(packet->DestinationMac, DestinationMacs[i]) == 0) {
 
-                                AcceptPacket(packet);
+                                //AcceptPacket(packet);
                                 dispatchPacket(packet);
                                 goto FINISH_PACKET;
 
@@ -247,6 +247,7 @@ void SeedCommandCenter::listen() {
 
                         }
 
+                        cout << "VERBOSE_PACKET_MAC_DISMATCH" << endl;
                         goto REJECT_PACKET;
 
                     case PACKET_TYPE_ACK:
@@ -259,21 +260,22 @@ void SeedCommandCenter::listen() {
 
                         if(compareMac(packet->DestinationMac, (uint8_t*) MAC_SYNC_DESTINATION) == 0) {
 
-                            AcceptPacket(packet);
+                            //AcceptPacket(packet);
                             dispatchPacket(packet);
                             break;
 
                         }
 
+                        cout << "VERBOSE_PACKET_MAC_DISMATCH" << endl;
                         goto REJECT_PACKET;
 
                     default:
 
-                        // Unknown type.
+                        cout << "VERBOSE_PACKET_TYPE_UNKNOWN" << endl;
 
                     REJECT_PACKET:
 
-                        RejectPacket(packet);
+                        //RejectPacket(packet);
                         delete packet;
                         break;
 
@@ -303,8 +305,8 @@ void SeedCommandCenter::listen() {
                         cout << "Session " << session->SessionId << " timeout." << endl;
 
                         // FIXME: Dirty implementation.
-                        RejectPacket(session->Packets.begin()->second);
-
+                        //RejectPacket(session->Packets.begin()->second);
+                        RejectSession(session, 0, "REJECT_SESSION_TIMEOUT");
                         Abort(session);
                         // Must break here as Abort remove elements of Sessions, otherwise iterator crash.
                         break;
@@ -438,6 +440,8 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
             break;
     }
 
+    AcceptSession(session);
+
     delete[] tlvs;
     Sessions.erase(session->SessionId);
     delete session;
@@ -452,6 +456,7 @@ void SeedCommandCenter::Stop() {
 
 }
 
+/*
 void SeedCommandCenter::AcceptPacket(SeedPacket *packet) {
 
     SeedPacket ack;
@@ -468,7 +473,9 @@ void SeedCommandCenter::AcceptPacket(SeedPacket *packet) {
     pcap_inject(Handle, &ack, 24);
 
 }
+*/
 
+/*
 void SeedCommandCenter::RejectPacket(SeedPacket *packet) {
 
     SeedPacket rjt;
@@ -478,6 +485,45 @@ void SeedCommandCenter::RejectPacket(SeedPacket *packet) {
     rjt.SetBeginning(packet->IsBeginning());
     rjt.SetEnding(packet->IsEnding());
     rjt.SetPartId(packet->GetPartId());
+    rjt.SessionId = packet->SessionId;
+
+    rjt.Cook();
+
+    pcap_inject(Handle, &rjt, 24);
+
+}
+*/
+
+void SeedCommandCenter::AcceptSession(SeedSession* session) {
+
+    SeedPacket* packet = session->Packets.begin()->second;
+
+    SeedPacket ack;
+    ack.SetDestinationMac(packet->DestinationMac);
+    ack.SetSourceMac(LocalMac);
+    ack.SetType(PACKET_TYPE_ACK);
+    ack.SetBeginning(true);
+    ack.SetEnding(true);
+    ack.SetPartId(0);
+    ack.SessionId = packet->SessionId;
+
+    ack.Cook();
+
+    pcap_inject(Handle, &ack, 24);
+
+}
+
+void SeedCommandCenter::RejectSession(SeedSession* session, SeedPacket* packet, string reason) {
+
+    if(packet == 0) packet = session->Packets.begin()->second;
+
+    SeedPacket rjt;
+    rjt.SetDestinationMac(packet->DestinationMac);
+    rjt.SetSourceMac(LocalMac);
+    rjt.SetType(PACKET_TYPE_RJT);
+    rjt.SetBeginning(true);
+    rjt.SetEnding(true);
+    rjt.SetPartId(0);
     rjt.SessionId = packet->SessionId;
 
     rjt.Cook();
