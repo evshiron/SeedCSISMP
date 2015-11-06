@@ -36,7 +36,7 @@ public:
     uint8_t Tlvs[1024];
 
     SeedPacket();
-    SeedPacket(const u_char* data);
+    SeedPacket(const u_char* data, int length);
 
     uint8_t GetType();
     bool IsBeginning();

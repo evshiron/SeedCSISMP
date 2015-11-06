@@ -125,18 +125,22 @@ char* SeedSession::assemble() {
 
         SeedPacket* packet = Packets[i];
 
-        for(int j = 0; j < 1021; j++) {
+        for(int j = 0; j < 1023; j++) {
 
             // If the current is the ending type.
             if(packet->Tlvs[j-1] == 0 && packet->Tlvs[j] == 0 && packet->Tlvs[j+1] == 0) {
 
                 memcpy(assembly + offset, &packet->Tlvs, j);
                 offset += j;
-                break;
+                goto NEXT_PACKET;
 
             }
 
         }
+
+        CC->RejectSession(this, packet, "REJECT_TLVS_NO_ENDING");
+
+        NEXT_PACKET: cout;
 
     }
 

@@ -10,15 +10,15 @@ using namespace std;
 
 SeedPacket::SeedPacket() {
 
-    memset(&(this->Tlvs), '\0', 1024);
+    memset(&(this->Tlvs), 0xff, 1024);
 
 }
 
-SeedPacket::SeedPacket(const u_char* data) {
+SeedPacket::SeedPacket(const u_char* data, int length) : SeedPacket() {
 
     // FIXME: Dirty implementation.
     // As we don't care about everything after the Tlvs.
-    memcpy(this, data, sizeof(SeedPacket));
+    memcpy(this, data, length);
 
     ProtocolType = ntohs(ProtocolType);
 

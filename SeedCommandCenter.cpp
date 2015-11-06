@@ -225,9 +225,10 @@ void SeedCommandCenter::listen() {
 
                 if(header->caplen < header->len) FATAL("ERROR_CAPTURE_PART");
 
-                u_char copy[1046];
-                memcpy(copy, data, header->len);
-                packet = new SeedPacket((const u_char*) copy);
+                //u_char copy[sizeof(SeedPacket)];
+                //memcpy(copy, data, header->len);
+                //packet = new SeedPacket((const u_char*) copy, header->len);
+                packet = new SeedPacket(data, header->len);
 
                 // Packet filter.
                 switch(packet->GetType()) {
@@ -319,9 +320,7 @@ void SeedCommandCenter::listen() {
 
         }
 
-        FINISH_PACKET:
-
-            cout;
+        FINISH_PACKET: cout;
 
     }
 
@@ -337,6 +336,9 @@ void SeedCommandCenter::Abort(SeedSession *session) {
 }
 
 void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
+
+    list<SeedSInfo*> sInfoAdding;
+    list<string> sInfoDeleting;
 
     string no;
     string name;
@@ -360,6 +362,22 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                 switch(tlvs[i]) {
                     case TLV_TYPE_NO:
 
+                        if(tlvs[i+1] > 12) {
+
+                            RejectSession(session, 0, "REJECT_NO_LENGTH_UNEXPECTED");
+                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                            goto CLEAN_SESSION;
+
+                        }
+
+                        if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
+
+                            RejectSession(session, 0, "REJECT_NO_LENGTH_MISMATCH");
+                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                            goto CLEAN_SESSION;
+
+                        }
+
                         no = string(&tlvs[i+2]);
                         cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
@@ -367,6 +385,22 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                         break;
 
                     case TLV_TYPE_NAME:
+
+                        if(tlvs[i+1] > 16) {
+
+                            RejectSession(session, 0, "REJECT_NAME_LENGTH_UNEXPECTED");
+                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                            goto CLEAN_SESSION;
+
+                        }
+
+                        if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
+
+                            RejectSession(session, 0, "REJECT_NAME_LENGTH_MISMATCH");
+                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                            goto CLEAN_SESSION;
+
+                        }
 
                         name = string(&tlvs[i+2]);
                         cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
@@ -376,11 +410,27 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
                     case TLV_TYPE_FACULTY:
 
+                        if(tlvs[i+1] > 64) {
+
+                            RejectSession(session, 0, "REJECT_FACULTY_LENGTH_UNEXPECTED");
+                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                            goto CLEAN_SESSION;
+
+                        }
+
+                        if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
+
+                            RejectSession(session, 0, "REJECT_FACULTY_LENGTH_MISMATCH");
+                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                            goto CLEAN_SESSION;
+
+                        }
+
                         faculty = string(&tlvs[i+2]);
                         cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
 
-                        LocalSInfo[no] = new SeedSInfo(no, name, faculty);
+                        sInfoAdding.push_back(new SeedSInfo(no, name, faculty));
 
                         break;
 
@@ -414,8 +464,38 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                 switch(tlvs[i]) {
                     case TLV_TYPE_NO:
 
+                        if(tlvs[i+1] > 12) {
+
+                            RejectSession(session, 0, "REJECT_NO_LENGTH_UNEXPECTED");
+                            goto CLEAN_SESSION;
+
+                        }
+
+                        if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
+
+                            RejectSession(session, 0, "REJECT_NO_LENGTH_MISMATCH");
+                            goto CLEAN_SESSION;
+
+                        }
+
                         cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
+
+                        no = string(string(&tlvs[i+2]));
+
+                        if(LocalSInfo.count(no) < 1) {
+
+                            RejectSession(session, 0, "REJECT_NO_SUCH_NO");
+                            goto CLEAN_SESSION;
+
+                        }
+                        else if(LocalSInfo.count(no) > 1) {
+
+                            FATAL("ERROR_MAP_DUPLICATED");
+
+                        }
+
+                        sInfoDeleting.push_back(no);
 
                         break;
 
@@ -436,12 +516,33 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
         case PACKET_TYPE_SYNC:
             break;
         default:
-            cout << "WARNING_TYPE_UNKNOWN";
+            FATAL("ERROR_PACKET_TYPE_UNKNOWN");
             break;
     }
 
     AcceptSession(session);
 
+    if(session->Type == PACKET_TYPE_ADD) {
+
+        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) {
+            SeedSInfo* sInfo = *it;
+            LocalSInfo[sInfo->No] = sInfo;
+        }
+
+    }
+
+    if(session->Type == PACKET_TYPE_DEL) {
+
+        for(auto it = sInfoDeleting.begin(); it != sInfoDeleting.end(); it++) {
+            string no = *it;
+            LocalSInfo.erase(no);
+        }
+
+    }
+
+    CLEAN_SESSION:
+
+    // If SInfo values mess up, maybe because string's no copy policy.
     delete[] tlvs;
     Sessions.erase(session->SessionId);
     delete session;
@@ -514,6 +615,8 @@ void SeedCommandCenter::AcceptSession(SeedSession* session) {
 }
 
 void SeedCommandCenter::RejectSession(SeedSession* session, SeedPacket* packet, string reason) {
+
+    cout << "Reject session " << session->SessionId << " for " << reason << "." << endl;
 
     if(packet == 0) packet = session->Packets.begin()->second;
 
