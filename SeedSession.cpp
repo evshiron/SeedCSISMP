@@ -149,4 +149,11 @@ char* SeedSession::assemble() {
 
 SeedSession::~SeedSession() {
 
+    for(auto it = Packets.begin(); it != Packets.end(); it++) {
+
+        SeedPacket* packet = (*it).second;
+        delete packet;
+
+    }
+
 }

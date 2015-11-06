@@ -252,6 +252,7 @@ void SeedCommandCenter::listen() {
                     case PACKET_TYPE_ACK:
                     case PACKET_TYPE_RJT:
 
+                        delete packet;
                         break;
 
                     case PACKET_TYPE_SYNC:
@@ -270,6 +271,7 @@ void SeedCommandCenter::listen() {
                     REJECT_PACKET:
 
                         rejectPacket(packet);
+                        delete packet;
                         break;
 
                 }
@@ -295,12 +297,7 @@ void SeedCommandCenter::listen() {
 
         FINISH_PACKET:
 
-            if(packet != 0) {
-
-                delete packet;
-                packet = 0;
-
-            }
+            cout;
 
     }
 
@@ -411,6 +408,10 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
             cout << "WARNING_TYPE_UNKNOWN";
             break;
     }
+
+    delete[] tlvs;
+    Sessions.erase(session->SessionId);
+    delete session;
 
 }
 
