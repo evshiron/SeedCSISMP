@@ -239,7 +239,7 @@ void SeedCommandCenter::listen() {
 
                             if(compareMac(packet->DestinationMac, DestinationMacs[i]) == 0) {
 
-                                acceptPacket(packet);
+                                AcceptPacket(packet);
                                 dispatchPacket(packet);
                                 goto FINISH_PACKET;
 
@@ -259,7 +259,7 @@ void SeedCommandCenter::listen() {
 
                         if(compareMac(packet->DestinationMac, (uint8_t*) MAC_SYNC_DESTINATION) == 0) {
 
-                            acceptPacket(packet);
+                            AcceptPacket(packet);
                             dispatchPacket(packet);
                             break;
 
@@ -268,9 +268,12 @@ void SeedCommandCenter::listen() {
                         goto REJECT_PACKET;
 
                     default:
+
+                        // Unknown type.
+
                     REJECT_PACKET:
 
-                        rejectPacket(packet);
+                        RejectPacket(packet);
                         delete packet;
                         break;
 
@@ -422,7 +425,7 @@ void SeedCommandCenter::Stop() {
 
 }
 
-void SeedCommandCenter::acceptPacket(SeedPacket* packet) {
+void SeedCommandCenter::AcceptPacket(SeedPacket *packet) {
 
     SeedPacket ack;
     ack.SetDestinationMac(packet->DestinationMac);
@@ -439,7 +442,7 @@ void SeedCommandCenter::acceptPacket(SeedPacket* packet) {
 
 }
 
-void SeedCommandCenter::rejectPacket(SeedPacket* packet) {
+void SeedCommandCenter::RejectPacket(SeedPacket *packet) {
 
     SeedPacket rjt;
     rjt.SetDestinationMac(packet->DestinationMac);

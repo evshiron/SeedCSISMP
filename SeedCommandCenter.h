@@ -37,6 +37,9 @@ public:
 
     void Start();
 
+    void AcceptPacket(SeedPacket *packet);
+    void RejectPacket(SeedPacket *packet);
+
     void Collect(SeedSession* session, char* tlvs);
 
     void Stop();
@@ -52,8 +55,6 @@ private:
     void convertMac(string source, uint8_t* out);
     int compareMac(uint8_t* a, uint8_t* b);
     void listen();
-    void acceptPacket(SeedPacket* packet);
-    void rejectPacket(SeedPacket* packet);
     void dispatchPacket(SeedPacket* packet);
 
 };

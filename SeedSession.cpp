@@ -53,7 +53,18 @@ void SeedSession::Consume(SeedPacket* packet) {
         }
         else {
 
-            Packets[packet->GetPartId()] = packet;
+            // Check if the PartId is beyond PartCount.
+            if(mPartCount > 0 && packet->GetPartId() >= mPartCount) {
+
+                CC->RejectPacket(packet);
+                delete packet;
+
+            }
+            else {
+
+                Packets[packet->GetPartId()] = packet;
+
+            }
 
         }
 
