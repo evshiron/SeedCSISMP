@@ -17,6 +17,8 @@ SeedSession::SeedSession(SeedCommandCenter* cc, uint8_t type, uint32_t sessionId
 
     SessionId = sessionId;
 
+    CreatedTime = time(0);
+
     mPartCount = 0;
     mIsCompleted = false;
     mIsAborted = false;

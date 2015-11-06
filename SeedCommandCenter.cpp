@@ -294,6 +294,25 @@ void SeedCommandCenter::listen() {
             case 0:
 
                 //cout << "Pcap capture timeout." << endl;
+
+                for(auto it = Sessions.begin(); it != Sessions.end(); it++) {
+
+                    SeedSession* session = (*it).second;
+                    if(time(0) > session->CreatedTime + 5) {
+
+                        cout << "Session " << session->SessionId << " timeout." << endl;
+
+                        // FIXME: Dirty implementation.
+                        RejectPacket(session->Packets.begin()->second);
+
+                        Abort(session);
+                        // Must break here as Abort remove elements of Sessions, otherwise iterator crash.
+                        break;
+
+                    }
+
+                }
+
                 break;
 
         }

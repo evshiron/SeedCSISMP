@@ -26,6 +26,8 @@ public:
 
     uint32_t SessionId;
 
+    time_t CreatedTime;
+
     map<uint32_t, SeedPacket*> Packets;
 
     SeedSession(SeedCommandCenter* cc, uint8_t sessionType, uint32_t sessionId);
