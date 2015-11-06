@@ -2,6 +2,8 @@
 // Created by evshiron on 11/4/15.
 //
 
+#include <string.h>
+
 #include "SeedSession.h"
 #include "SeedCommandCenter.h"
 

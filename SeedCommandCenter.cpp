@@ -3,14 +3,14 @@
 //
 
 #include <time.h>
+#include <string.h>
 #include <string>
-
+#include <algorithm>
 #include <vector>
 #include <iostream>
 #include <fstream>
 
 #include "SeedCommandCenter.h"
-#include "SeedPacket.h"
 
 #define FILE_STUINFO "../StuInfo.txt"
 #define MAC_SYNC_DESTINATION "0x0180C2DDFEFF"

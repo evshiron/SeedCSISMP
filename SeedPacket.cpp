@@ -2,6 +2,8 @@
 // Created by evshiron on 11/2/15.
 //
 
+#include <string.h>
+#include <arpa/inet.h>
 #include <iostream>
 
 #include "SeedPacket.h"
