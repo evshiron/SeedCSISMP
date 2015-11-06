@@ -430,6 +430,18 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                         cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
 
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) {
+
+                            if((*it)->No == no) {
+
+                                RejectSession(session, 0, "REJECT_NO_DUPLICATED");
+                                for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                                goto CLEAN_SESSION;
+
+                            }
+
+                        }
+
                         sInfoAdding.push_back(new SeedSInfo(no, name, faculty));
 
                         break;
