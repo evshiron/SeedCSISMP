@@ -445,9 +445,6 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
             cout << "Added." << endl;
 
-            // FIXME: Cause crashes.
-            OutputSInfo();
-
             break;
         case PACKET_TYPE_DEL:
 
@@ -539,6 +536,9 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
         }
 
     }
+
+    // FIXME: Cause crashes.
+    OutputSInfo();
 
     CLEAN_SESSION:
 
