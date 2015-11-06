@@ -112,6 +112,8 @@ void SeedSession::update() {
 
     }
 
+    delete this;
+
 }
 
 char* SeedSession::assemble() {

@@ -411,7 +411,6 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
     delete[] tlvs;
     Sessions.erase(session->SessionId);
-    delete session;
 
 }
 
