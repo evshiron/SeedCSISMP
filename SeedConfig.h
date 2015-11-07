@@ -8,8 +8,8 @@
 #include <string>
 #include <list>
 
-#define FILE_CONFIG "../Config.txt"
-#define FILE_CFGINFO "../CfgInfo.txt"
+#define FILE_CONFIG "./Config.txt"
+#define FILE_CFGINFO "./CfgInfo.txt"
 
 using namespace std;
 

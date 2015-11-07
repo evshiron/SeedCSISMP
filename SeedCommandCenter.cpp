@@ -12,8 +12,8 @@
 #include "SeedCommandCenter.h"
 #include "SeedSessionIdentity.h"
 
-#define FILE_STUINFO "../StuInfo.txt"
 #define MAC_SYNC_DESTINATION "\x01\x80\xC2\xDD\xFE\xFF"
+#define FILE_STUINFO "./StuInfo.txt"
 
 #define LENGTH_FACULTY_OUTPUT 33
 #define LENGTH_NO_OUTPUT 14
