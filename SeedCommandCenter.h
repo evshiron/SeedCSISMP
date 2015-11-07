@@ -26,6 +26,8 @@ public:
 
     pcap_t* Handle;
 
+    time_t SyncTime;
+
     map<uint32_t, SeedSession*> Sessions;
 
     map<string, SeedSInfo*> LocalSInfo;
@@ -44,6 +46,8 @@ public:
 
     void Abort(SeedSession* session);
     void Collect(SeedSession* session, char* tlvs);
+
+    void SendSInfo();
 
     void Stop();
 

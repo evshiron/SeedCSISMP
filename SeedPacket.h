@@ -38,6 +38,8 @@ public:
     SeedPacket();
     SeedPacket(const u_char* data, int length);
 
+    int GetLength();
+
     uint8_t GetType();
     bool IsBeginning();
     bool IsEnding();

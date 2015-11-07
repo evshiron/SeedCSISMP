@@ -33,10 +33,6 @@ void SeedSession::Consume(SeedPacket* packet) {
 
         cout << "Packet collected by session " << SessionId << "." << endl;
 
-        if(distance(Packets.begin(), Packets.end()) == 0) {
-
-        }
-
         if(packet->IsBeginning() && packet->IsEnding()) {
 
             Packets[packet->GetPartId()] = packet;
@@ -112,7 +108,7 @@ void SeedSession::Consume(SeedPacket* packet) {
 
         char* tlvs = assemble();
 
-        CC->Collect(this, tlvs);
+        if(tlvs != 0) CC->Collect(this, tlvs);
 
     }
 
@@ -127,7 +123,15 @@ char* SeedSession::assemble() {
 
         SeedPacket* packet = Packets[i];
 
-        for(int j = 0; j < 1023; j++) {
+        if(packet->Tlvs[0] == 0 && packet->Tlvs[1] == 0) {
+
+            CC->RejectSession(this, packet, "REJECT_TLV_UNEXPECTED");
+            delete[] assembly;
+            return 0;
+
+        }
+
+        for(int j = 2; j < 1023; j++) {
 
             // If the current is the ending type.
             if(packet->Tlvs[j-1] == 0 && packet->Tlvs[j] == 0 && packet->Tlvs[j+1] == 0) {
@@ -141,6 +145,8 @@ char* SeedSession::assemble() {
         }
 
         CC->RejectSession(this, packet, "REJECT_TLVS_NO_ENDING");
+        delete[] assembly;
+        return 0;
 
         NEXT_PACKET: cout;
 

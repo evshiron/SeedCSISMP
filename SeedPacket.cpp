@@ -30,6 +30,16 @@ SeedPacket::SeedPacket(const u_char* data, int length) : SeedPacket() {
 
 }
 
+int SeedPacket::GetLength() {
+
+    int offset = 0;
+
+    if(Tlvs[0] != 0 && Tlvs[1] != 0) while(!(Tlvs[offset-1] == 0 && Tlvs[offset] == 0 && Tlvs[offset+1] == 0)) offset++;
+
+    return 22 + offset + 2;
+
+}
+
 uint8_t SeedPacket::GetType() {
 
     return (Flags >> 24);

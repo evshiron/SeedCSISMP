@@ -13,11 +13,15 @@
 #include "SeedCommandCenter.h"
 
 #define FILE_STUINFO "../StuInfo.txt"
-#define MAC_SYNC_DESTINATION "0x0180C2DDFEFF"
+#define MAC_SYNC_DESTINATION "\x01\x80\xC2\xDD\xFE\xFF"
 
-#define LENGTH_FACULTY 33
-#define LENGTH_NO 14
-#define LENGTH_NAME 24
+#define LENGTH_FACULTY_OUTPUT 33
+#define LENGTH_NO_OUTPUT 14
+#define LENGTH_NAME_OUTPUT 24
+
+#define LENGTH_TLV_NO 12
+#define LENGTH_TLV_NAME 16
+#define LENGTH_TLV_FACULTY 64
 
 #define FATAL(x) { cerr << x << endl; exit(1); }
 
@@ -34,6 +38,8 @@ SeedCommandCenter::SeedCommandCenter(const char* dev, SeedConfig& config) {
     Handle = pcap_create(dev, mErrbuf);
 
     if(!Handle) FATAL("ERROR_PCAP_CREATE_FAILED");
+
+    SyncTime = 0;
 
 }
 
@@ -128,9 +134,9 @@ void SeedCommandCenter::OutputSInfo() {
     strftime(strNow, 9, "%X", &now);
 
     ofs << "Time : " << strNow << endl;
-    ofs << "Faculty" << string(LENGTH_FACULTY - 7 + 3, ' ');
-    ofs << "Student ID" << string(LENGTH_NO - 10 + 3, ' ');
-    ofs << "Name" << string(LENGTH_NAME - 4 + 3, ' ') << endl;
+    ofs << "Faculty" << string(LENGTH_FACULTY_OUTPUT - 7 + 3, ' ');
+    ofs << "Student ID" << string(LENGTH_NO_OUTPUT - 10 + 3, ' ');
+    ofs << "Name" << string(LENGTH_NAME_OUTPUT - 4 + 3, ' ') << endl;
     ofs << string(80, '-') << endl;
 
     for(auto it = ssInfo.begin(); it != ssInfo.end(); it++) {
@@ -141,14 +147,14 @@ void SeedCommandCenter::OutputSInfo() {
 
         for(int i = 0; i < faculty.length(); i++) {
 
-            if(i != 0 && i % LENGTH_FACULTY == 0) ofs << endl;
+            if(i != 0 && i % LENGTH_FACULTY_OUTPUT == 0) ofs << endl;
             ofs << faculty[i];
 
         }
-        ofs << string(LENGTH_FACULTY - faculty.length() % LENGTH_FACULTY + 3, ' ');
+        ofs << string(LENGTH_FACULTY_OUTPUT - faculty.length() % LENGTH_FACULTY_OUTPUT + 3, ' ');
 
-        ofs << no << string(LENGTH_NO - no.length() % LENGTH_NO + 3, ' ');
-        ofs << name << string(LENGTH_NAME - name.length() % LENGTH_NAME + 3, ' ') << endl;
+        ofs << no << string(LENGTH_NO_OUTPUT - no.length() % LENGTH_NO_OUTPUT + 3, ' ');
+        ofs << name << string(LENGTH_NAME_OUTPUT - name.length() % LENGTH_NAME_OUTPUT + 3, ' ') << endl;
 
     }
 
@@ -316,6 +322,13 @@ void SeedCommandCenter::listen() {
 
                 }
 
+                if((SyncTime == 0 && LocalSInfo.size() > 0) || (SyncTime != 0 && SyncTime + 30 < time(0))) {
+
+                    // Send SYNC here.
+                    SendSInfo();
+
+                }
+
                 break;
 
         }
@@ -328,6 +341,94 @@ void SeedCommandCenter::listen() {
 
 }
 
+void SeedCommandCenter::SendSInfo() {
+
+    cout << "Sync." << endl;
+
+    list<char*> tlvs;
+    map<char*, int> lengths;
+
+    char* tlv = new char[1024];
+    int offset = 0;
+
+    auto newTlv = [&]() {
+
+        tlv[offset] = 0; offset+=1;
+        tlv[offset] = 0; offset+=1;
+
+        tlvs.push_back(tlv);
+        lengths[tlv] = offset;
+
+        tlv = new char[1024];
+        offset = 0;
+
+    };
+
+    for(auto it = LocalSInfo.begin(); it != LocalSInfo.end(); it++) {
+
+        SeedSInfo* sInfo = (*it).second;
+
+        int l = 0;
+
+        l = strlen(sInfo->No.c_str()) + 1;
+
+        if(offset + 2 + l > 1021) newTlv();
+
+        tlv[offset] = TLV_TYPE_NO; offset+=1;
+        tlv[offset] = l; offset+=1;
+        strcpy(&tlv[offset], sInfo->No.c_str()); offset+= l;
+
+        l = strlen(sInfo->Name.c_str()) + 1;
+
+        if(offset + 2 + l > 1021) newTlv();
+
+        tlv[offset] = TLV_TYPE_NAME; offset+=1;
+        tlv[offset] = l; offset+=1;
+        strcpy(&tlv[offset], sInfo->Name.c_str()); offset+= l;
+
+        l = strlen(sInfo->Faculty.c_str()) + 1;
+
+        if(offset + 2 + l > 1021) newTlv();
+
+        tlv[offset] = TLV_TYPE_FACULTY; offset+=1;
+        tlv[offset] = l; offset+=1;
+        strcpy(&tlv[offset], sInfo->Faculty.c_str()); offset+= l;
+
+    }
+
+    newTlv();
+
+    srand(time(0));
+    uint32_t sessionId = rand() % (4294967295 - 1000) + 1000;
+
+    int i = 0;
+    for(auto it = tlvs.begin(); it != tlvs.end(); it++, i++) {
+
+        SeedPacket* packet = new SeedPacket();
+        packet->SetDestinationMac((uint8_t*) MAC_SYNC_DESTINATION);
+        packet->SetSourceMac(LocalMac);
+        packet->SetType(PACKET_TYPE_SYNC);
+        i == 0 ? packet->SetBeginning(true) : packet->SetBeginning(false);
+        i == tlvs.size() - 1 ? packet->SetEnding(true) : packet->SetEnding(false);
+        packet->SetPartId(i);
+        packet->SessionId = sessionId;
+        memcpy(&(packet->Tlvs), *it, lengths[*it]);
+
+        packet->Cook();
+
+        pcap_inject(Handle, packet, packet->GetLength());
+
+        delete packet;
+
+    }
+
+    delete[] tlv;
+    for(auto it = tlvs.begin(); it != tlvs.end(); it++) delete[] *it;
+
+    SyncTime = time(0);
+
+}
+
 void SeedCommandCenter::Abort(SeedSession *session) {
 
     Sessions.erase(session->SessionId);
@@ -335,6 +436,7 @@ void SeedCommandCenter::Abort(SeedSession *session) {
 
 }
 
+// Assert tlvs must != 0.
 void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
     list<SeedSInfo*> sInfoAdding;
@@ -362,7 +464,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                 switch(tlvs[i]) {
                     case TLV_TYPE_NO:
 
-                        if(tlvs[i+1] > 12) {
+                        if(tlvs[i+1] > LENGTH_TLV_NO) {
 
                             RejectSession(session, 0, "REJECT_NO_LENGTH_UNEXPECTED");
                             for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
@@ -386,7 +488,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
                     case TLV_TYPE_NAME:
 
-                        if(tlvs[i+1] > 16) {
+                        if(tlvs[i+1] > LENGTH_TLV_NAME) {
 
                             RejectSession(session, 0, "REJECT_NAME_LENGTH_UNEXPECTED");
                             for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
@@ -410,7 +512,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
                     case TLV_TYPE_FACULTY:
 
-                        if(tlvs[i+1] > 64) {
+                        if(tlvs[i+1] > LENGTH_TLV_FACULTY) {
 
                             RejectSession(session, 0, "REJECT_FACULTY_LENGTH_UNEXPECTED");
                             for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
@@ -478,7 +580,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                 switch(tlvs[i]) {
                     case TLV_TYPE_NO:
 
-                        if(tlvs[i+1] > 12) {
+                        if(tlvs[i+1] > LENGTH_TLV_NO) {
 
                             RejectSession(session, 0, "REJECT_NO_LENGTH_UNEXPECTED");
                             goto CLEAN_SESSION;
@@ -532,6 +634,16 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
         case PACKET_TYPE_RJT:
             break;
         case PACKET_TYPE_SYNC:
+
+            if(compareMac(session->Packets.begin()->second->SourceMac, LocalMac) == 0) {
+
+                cout << "INFO_SYNC_SELF_CONFIRMED" << endl;
+                goto CLEAN_SESSION;
+
+            }
+
+            cout << "Syncing." << endl;
+
             break;
         default:
             FATAL("ERROR_PACKET_TYPE_UNKNOWN");
@@ -628,6 +740,8 @@ void SeedCommandCenter::AcceptSession(SeedSession* session) {
     ack.SetEnding(true);
     ack.SetPartId(0);
     ack.SessionId = packet->SessionId;
+    ack.Tlvs[0] = 0;
+    ack.Tlvs[1] = 0;
 
     ack.Cook();
 
@@ -649,6 +763,8 @@ void SeedCommandCenter::RejectSession(SeedSession* session, SeedPacket* packet, 
     rjt.SetEnding(true);
     rjt.SetPartId(0);
     rjt.SessionId = packet->SessionId;
+    rjt.Tlvs[0] = 0;
+    rjt.Tlvs[1] = 0;
 
     rjt.Cook();
 
