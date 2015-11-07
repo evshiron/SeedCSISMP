@@ -11,13 +11,14 @@
 
 #define FATAL(x) { cerr << x << endl; exit(1); }
 
-SeedSession::SeedSession(SeedCommandCenter* cc, uint8_t type, uint32_t sessionId) {
+SeedSession::SeedSession(SeedCommandCenter* cc, uint8_t type, SeedSessionIdentity& identity) {
 
     CC = cc;
 
     Type = type;
 
-    SessionId = sessionId;
+    memcpy(&Identity, &identity, 16);
+    //SessionId = sessionId;
 
     CreatedTime = time(0);
 
@@ -28,7 +29,7 @@ SeedSession::SeedSession(SeedCommandCenter* cc, uint8_t type, uint32_t sessionId
 
 void SeedSession::Consume(SeedPacket* packet) {
 
-    if(packet->SessionId == SessionId) {
+    if(packet->SessionId == Identity.GetSessionId()) {
 
         if(packet->GetType() == PACKET_TYPE_SYNC && packet->SessionId <= 1000) {
 
@@ -39,7 +40,7 @@ void SeedSession::Consume(SeedPacket* packet) {
 
         }
 
-        cout << "Packet collected by session " << SessionId << "." << endl;
+        cout << "Packet collected by session " << Identity.GetSessionId() << "." << endl;
 
         if(packet->IsBeginning() && packet->IsEnding()) {
 
@@ -80,6 +81,7 @@ void SeedSession::Consume(SeedPacket* packet) {
     else {
 
         packet->Print();
+        cerr << Identity.GetSessionId() << endl;
         FATAL("ERROR_SESSION_UNEXPECTED");
 
     }
@@ -105,7 +107,7 @@ void SeedSession::Consume(SeedPacket* packet) {
 
     if(mIsCompleted) {
 
-        cout << "Session " << SessionId << " completed." << endl;
+        cout << "Session " << Identity.GetSessionId() << " completed." << endl;
 
         char* tlvs = assemble();
 

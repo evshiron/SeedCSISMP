@@ -11,6 +11,7 @@
 #include <fstream>
 
 #include "SeedCommandCenter.h"
+#include "SeedSessionIdentity.h"
 
 #define FILE_STUINFO "../StuInfo.txt"
 #define MAC_SYNC_DESTINATION "\x01\x80\xC2\xDD\xFE\xFF"
@@ -319,7 +320,7 @@ void SeedCommandCenter::listen() {
                     SeedSession* session = (*it).second;
                     if(time(0) > session->CreatedTime + 5) {
 
-                        cout << "Session " << session->SessionId << " timeout." << endl;
+                        cout << "Session " << session->Identity.GetSessionId() << " timeout." << endl;
 
                         // FIXME: Dirty implementation.
                         //RejectPacket(session->Packets.begin()->second);
@@ -441,7 +442,7 @@ void SeedCommandCenter::SendSInfo() {
 
 void SeedCommandCenter::Abort(SeedSession *session) {
 
-    Sessions.erase(session->SessionId);
+    Sessions.erase(session->Identity);
     delete session;
 
 }
@@ -800,7 +801,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
     // If SInfo values mess up, maybe because string's no copy policy.
     delete[] tlvs;
-    Sessions.erase(session->SessionId);
+    Sessions.erase(session->Identity);
     delete session;
 
 }
@@ -874,7 +875,7 @@ void SeedCommandCenter::AcceptSession(SeedSession* session) {
 
 void SeedCommandCenter::RejectSession(SeedSession* session, SeedPacket* packet, string reason) {
 
-    cout << "Reject session " << session->SessionId << " for " << reason << "." << endl;
+    cout << "Reject session " << session->Identity.GetSessionId() << " for " << reason << "." << endl;
 
     if(packet == 0) packet = session->Packets.begin()->second;
 
@@ -897,13 +898,15 @@ void SeedCommandCenter::RejectSession(SeedSession* session, SeedPacket* packet, 
 
 void SeedCommandCenter::dispatchPacket(SeedPacket* packet) {
 
-    if(Sessions.count(packet->SessionId) == 0) {
+    SeedSessionIdentity identity(packet->DestinationMac, packet->SourceMac, packet->SessionId);
 
-        Sessions[packet->SessionId] = new SeedSession(this, packet->GetType(), packet->SessionId);
+    if(Sessions.count(identity) == 0) {
+
+        Sessions[identity] = new SeedSession(this, packet->GetType(), identity);
 
     }
 
-    SeedSession* session = Sessions[packet->SessionId];
+    SeedSession* session = Sessions[identity];
 
     session->Consume(packet);
 

@@ -13,8 +13,18 @@
 #include "SeedConfig.h"
 #include "SeedSession.h"
 #include "SeedSInfo.h"
+#include "SeedSessionIdentity.h"
 
 #define SIZE_DESTINATION_MAC 255
+
+struct SeedSessionComparer
+{
+    bool operator()(const SeedSessionIdentity& a, const SeedSessionIdentity& b) const
+    {
+        if(memcmp((void*) a.Bytes, (void*) b.Bytes, 16) == 0) return false;
+        return true;
+    }
+};
 
 class SeedCommandCenter {
 
@@ -28,7 +38,7 @@ public:
 
     time_t SyncTime;
 
-    map<uint32_t, SeedSession*> Sessions;
+    map<SeedSessionIdentity, SeedSession*, SeedSessionComparer> Sessions;
 
     map<string, SeedSInfo*> LocalSInfo;
     map<string, SeedSInfo*> RemoteSInfo;

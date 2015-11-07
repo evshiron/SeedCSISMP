@@ -11,6 +11,7 @@
 #include <map>
 
 #include "SeedPacket.h"
+#include "SeedSessionIdentity.h"
 
 using namespace std;
 
@@ -24,13 +25,13 @@ public:
 
     uint8_t Type;
 
-    uint32_t SessionId;
+    SeedSessionIdentity Identity;
 
     time_t CreatedTime;
 
     map<uint32_t, SeedPacket*> Packets;
 
-    SeedSession(SeedCommandCenter* cc, uint8_t sessionType, uint32_t sessionId);
+    SeedSession(SeedCommandCenter* cc, uint8_t sessionType, SeedSessionIdentity& identity);
 
     void Consume(SeedPacket* packet);
 
