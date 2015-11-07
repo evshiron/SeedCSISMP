@@ -573,7 +573,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
                     sInfoAdding.push_back(new SeedSInfo(no, name, faculty));
 
-                    expectedType = TLV_TYPE_FACULTY;
+                    expectedType = TLV_TYPE_NO;
 
                     break;
 
@@ -611,7 +611,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
             break;
         case PACKET_TYPE_DEL:
 
-            cout << "Deleting: " << endl;
+            cout << "Deleting." << endl;
 
             for(int i = 0; i < 128 * 1024; i++) {
 
@@ -638,10 +638,9 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
                         }
 
+                        no = string(&tlvs[i+2]);
                         cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
-
-                        no = string(string(&tlvs[i+2]));
 
                         if(LocalSInfo.count(no) < 1) {
 
@@ -671,6 +670,8 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                 }
 
             }
+
+            cout << "Deleted." << endl;
 
             break;
         case PACKET_TYPE_ACK:
