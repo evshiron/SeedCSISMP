@@ -894,12 +894,16 @@ void SeedCommandCenter::dispatchPacket(SeedPacket* packet) {
 
     if(Sessions.count(identity) == 0) {
 
-        Sessions[identity] = new SeedSession(this, packet->GetType(), identity);
+        SeedSession* session = new SeedSession(this, packet->GetType(), identity);
+        Sessions[identity] = session;
+        session->Consume(packet);
 
     }
+    else if(Sessions.count(identity) == 1) {
 
-    SeedSession* session = Sessions[identity];
+        SeedSession* session = Sessions.at(identity);
+        session->Consume(packet);
 
-    session->Consume(packet);
+    }
 
 }
