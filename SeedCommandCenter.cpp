@@ -446,119 +446,131 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
     string name;
     string faculty;
 
+    auto parseTlvs = [&]() -> bool {
+
+        for(int i = 0; i < 128 * 1024; i++) {
+
+            // Current must be the tlv type.
+
+            if(tlvs[i] == 0 && tlvs[i+1] == 0) {
+
+                break;
+
+            }
+
+            switch(tlvs[i]) {
+                case TLV_TYPE_NO:
+
+                    if(tlvs[i+1] > LENGTH_TLV_NO) {
+
+                        RejectSession(session, 0, "REJECT_NO_LENGTH_UNEXPECTED");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
+
+                    if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
+
+                        RejectSession(session, 0, "REJECT_NO_LENGTH_MISMATCH");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
+
+                    no = string(&tlvs[i+2]);
+                    cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                    i += 1 + tlvs[i+1];
+
+                    break;
+
+                case TLV_TYPE_NAME:
+
+                    if(tlvs[i+1] > LENGTH_TLV_NAME) {
+
+                        RejectSession(session, 0, "REJECT_NAME_LENGTH_UNEXPECTED");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
+
+                    if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
+
+                        RejectSession(session, 0, "REJECT_NAME_LENGTH_MISMATCH");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
+
+                    name = string(&tlvs[i+2]);
+                    cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                    i += 1 + tlvs[i+1];
+
+                    break;
+
+                case TLV_TYPE_FACULTY:
+
+                    if(tlvs[i+1] > LENGTH_TLV_FACULTY) {
+
+                        RejectSession(session, 0, "REJECT_FACULTY_LENGTH_UNEXPECTED");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
+
+                    if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
+
+                        RejectSession(session, 0, "REJECT_FACULTY_LENGTH_MISMATCH");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
+
+                    faculty = string(&tlvs[i+2]);
+                    cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
+                    i += 1 + tlvs[i+1];
+
+                    for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) {
+
+                        if((*it)->No == no) {
+
+                            RejectSession(session, 0, "REJECT_NO_DUPLICATED");
+                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                            return false;
+
+                        }
+
+                    }
+
+                    sInfoAdding.push_back(new SeedSInfo(no, name, faculty));
+
+                    break;
+
+                case 0:
+
+                FATAL("ERROR_TLV_TYPE_UNEXPECTED");
+
+                default:
+
+                    RejectSession(session, 0, "REJECT_TLV_TYPE_UNKNOWN");
+                    for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                    return false;
+
+            }
+
+        }
+
+        return true;
+
+    };
+
     switch(session->Type) {
         case PACKET_TYPE_ADD:
 
             cout << "Adding." << endl;
 
-            for(int i = 0; i < 128 * 1024; i++) {
+            if(!parseTlvs()) {
 
-                // Current must be the tlv type.
-
-                if(tlvs[i] == 0 && tlvs[i+1] == 0) {
-
-                    break;
-
-                }
-
-                switch(tlvs[i]) {
-                    case TLV_TYPE_NO:
-
-                        if(tlvs[i+1] > LENGTH_TLV_NO) {
-
-                            RejectSession(session, 0, "REJECT_NO_LENGTH_UNEXPECTED");
-                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                            goto CLEAN_SESSION;
-
-                        }
-
-                        if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
-
-                            RejectSession(session, 0, "REJECT_NO_LENGTH_MISMATCH");
-                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                            goto CLEAN_SESSION;
-
-                        }
-
-                        no = string(&tlvs[i+2]);
-                        cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
-                        i += 1 + tlvs[i+1];
-
-                        break;
-
-                    case TLV_TYPE_NAME:
-
-                        if(tlvs[i+1] > LENGTH_TLV_NAME) {
-
-                            RejectSession(session, 0, "REJECT_NAME_LENGTH_UNEXPECTED");
-                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                            goto CLEAN_SESSION;
-
-                        }
-
-                        if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
-
-                            RejectSession(session, 0, "REJECT_NAME_LENGTH_MISMATCH");
-                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                            goto CLEAN_SESSION;
-
-                        }
-
-                        name = string(&tlvs[i+2]);
-                        cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
-                        i += 1 + tlvs[i+1];
-
-                        break;
-
-                    case TLV_TYPE_FACULTY:
-
-                        if(tlvs[i+1] > LENGTH_TLV_FACULTY) {
-
-                            RejectSession(session, 0, "REJECT_FACULTY_LENGTH_UNEXPECTED");
-                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                            goto CLEAN_SESSION;
-
-                        }
-
-                        if(strlen(&tlvs[i+2]) + 1 != tlvs[i+1]) {
-
-                            RejectSession(session, 0, "REJECT_FACULTY_LENGTH_MISMATCH");
-                            for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                            goto CLEAN_SESSION;
-
-                        }
-
-                        faculty = string(&tlvs[i+2]);
-                        cout << "Faculty (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
-                        i += 1 + tlvs[i+1];
-
-                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) {
-
-                            if((*it)->No == no) {
-
-                                RejectSession(session, 0, "REJECT_NO_DUPLICATED");
-                                for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                                goto CLEAN_SESSION;
-
-                            }
-
-                        }
-
-                        sInfoAdding.push_back(new SeedSInfo(no, name, faculty));
-
-                        break;
-
-                    case 0:
-
-                        FATAL("ERROR_TLV_TYPE_UNEXPECTED");
-
-                    default:
-
-                        RejectSession(session, 0, "REJECT_TLV_TYPE_UNKNOWN");
-                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
-                        goto CLEAN_SESSION;
-
-                }
+                goto CLEAN_SESSION;
 
             }
 
@@ -644,6 +656,14 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
             cout << "Syncing." << endl;
 
+            if(!parseTlvs()) {
+
+                goto CLEAN_SESSION;
+
+            }
+
+            cout << "Synced." << endl;
+
             break;
         default:
             FATAL("ERROR_PACKET_TYPE_UNKNOWN");
@@ -666,6 +686,15 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
         for(auto it = sInfoDeleting.begin(); it != sInfoDeleting.end(); it++) {
             string no = *it;
             LocalSInfo.erase(no);
+        }
+
+    }
+
+    if(session->Type == PACKET_TYPE_SYNC) {
+
+        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) {
+            SeedSInfo* sInfo = *it;
+            RemoteSInfo[sInfo->No] = sInfo;
         }
 
     }
