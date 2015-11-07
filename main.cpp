@@ -31,8 +31,6 @@ int main() {
     SeedCommandCenter cc(dev, config);
     cc.Start();
 
-    while(1);
-
     return 0;
 
 }
