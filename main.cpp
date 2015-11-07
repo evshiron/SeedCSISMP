@@ -28,6 +28,7 @@ int main() {
     cout << "Device: " << dev << endl;
 
     SeedConfig config;
+    config.Output();
     SeedCommandCenter cc(dev, config);
     cc.Start();
 
