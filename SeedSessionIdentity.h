@@ -6,6 +6,7 @@
 #define SEEDCSISMP_SEEDSESSIONIDENTITY_H
 
 #include <iostream>
+#include <string.h>
 
 class SeedSessionIdentity {
 
