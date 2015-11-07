@@ -23,13 +23,21 @@ SeedSession::SeedSession(SeedCommandCenter* cc, uint8_t type, uint32_t sessionId
 
     mPartCount = 0;
     mIsCompleted = false;
-    mIsAborted = false;
 
 }
 
 void SeedSession::Consume(SeedPacket* packet) {
 
     if(packet->SessionId == SessionId) {
+
+        if(packet->GetType() == PACKET_TYPE_SYNC && packet->SessionId <= 1000) {
+
+            CC->RejectSession(this, packet, "REJECT_SYNC_SESSION_UNEXPECTED");
+            delete packet;
+            CC->Abort(this);
+            return;
+
+        }
 
         cout << "Packet collected by session " << SessionId << "." << endl;
 
@@ -39,7 +47,6 @@ void SeedSession::Consume(SeedPacket* packet) {
 
             mPartCount = 1;
             mIsCompleted = true;
-            mIsAborted = false;
 
         }
         else if(packet->IsEnding()) {
@@ -57,6 +64,8 @@ void SeedSession::Consume(SeedPacket* packet) {
                 //CC->RejectPacket(packet);
                 CC->RejectSession(this, packet, "REJECT_PACKET_PART_ID_UNEXPECTED");
                 delete packet;
+                CC->Abort(this);
+                return;
 
             }
             else {
@@ -91,14 +100,6 @@ void SeedSession::Consume(SeedPacket* packet) {
         }
 
         mIsCompleted = isCompleted;
-
-    }
-
-    if(mIsAborted) {
-
-        cout << "Session " << SessionId << " aborted." << endl;
-
-        CC->Abort(this);
 
     }
 
