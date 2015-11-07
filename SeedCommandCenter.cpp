@@ -171,7 +171,8 @@ void SeedCommandCenter::Start() {
 
     mIsStopped = false;
 
-    pcap_set_buffer_size(Handle, sizeof(SeedPacket));
+    // FIXME: Report to cause pcap_next_ex to return -3.
+    //pcap_set_buffer_size(Handle, sizeof(SeedPacket));
     pcap_set_promisc(Handle, true);
     //pcap_set_rfmon(Handle, true);
 

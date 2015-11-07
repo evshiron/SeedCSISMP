@@ -24,7 +24,7 @@ int main() {
 
     // FIXME: Force set interface name here.
     // To be noticed, packets sent from non-working interfaces (Like "en1") will not be caught by WireShark.
-    dev = "en0";
+    //dev = "en0";
     cout << "Device: " << dev << endl;
 
     SeedConfig config;
