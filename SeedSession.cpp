@@ -156,7 +156,7 @@ char* SeedSession::assemble() {
     memset(assembly + offset, '\0', 2);
     offset += 2;
 
-    cout << "Assembly size: " << offset - 1 << endl;
+    cout << "Assembly size: " << offset << endl;
 
     return assembly;
 

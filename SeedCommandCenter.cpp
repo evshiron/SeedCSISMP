@@ -114,7 +114,9 @@ void SeedCommandCenter::OutputSInfo() {
                 }
                 else {
 
-                    FATAL("ERROR_COMPARE_UNEXPECTED");
+                    // FIXME:
+                    result = true;
+                    //FATAL("ERROR_COMPARE_UNEXPECTED");
 
                 }
 
