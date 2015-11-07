@@ -3,7 +3,6 @@
 //
 
 #include <time.h>
-#include <string.h>
 #include <string>
 #include <algorithm>
 #include <vector>
@@ -185,12 +184,7 @@ void SeedCommandCenter::Start() {
 
     pcap_activate(Handle);
 
-    // FIXME:
-    mListener = new thread([&]() {
-
-        listen();
-
-    });
+    listen();
 
 }
 
@@ -809,8 +803,6 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 void SeedCommandCenter::Stop() {
 
     mIsStopped = true;
-
-    mListener->join();
 
 }
 

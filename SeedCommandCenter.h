@@ -7,6 +7,7 @@
 
 #include <thread>
 #include <map>
+#include <string.h>
 
 #include <pcap/pcap.h>
 
@@ -66,8 +67,6 @@ private:
     char* mErrbuf;
 
     bool mIsStopped;
-
-    thread* mListener;
 
     void convertMac(string source, uint8_t* out);
     int compareMac(uint8_t* a, uint8_t* b);
