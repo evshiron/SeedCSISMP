@@ -448,6 +448,8 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
     string name;
     string faculty;
 
+    bool isDataChanged = false;
+
     auto parseTlvs = [&]() -> bool {
 
         for(int i = 0; i < 128 * 1024; i++) {
@@ -642,15 +644,10 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                         cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                         i += 1 + tlvs[i+1];
 
-                        if(LocalSInfo.count(no) < 1) {
+                        if(LocalSInfo.count(no) == 0) {
 
                             RejectSession(session, 0, "REJECT_NO_SUCH_NO");
                             goto CLEAN_SESSION;
-
-                        }
-                        else if(LocalSInfo.count(no) > 1) {
-
-                            FATAL("ERROR_MAP_DUPLICATED");
 
                         }
 
@@ -708,8 +705,35 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
     if(session->Type == PACKET_TYPE_ADD) {
 
         for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) {
+
             SeedSInfo* sInfo = *it;
-            LocalSInfo[sInfo->No] = sInfo;
+
+            if(LocalSInfo.count(sInfo->No) == 1) {
+
+                SeedSInfo* s = LocalSInfo.find(sInfo->No)->second;
+                if(sInfo->No.compare(s->No) != 0) {
+                    s->No = sInfo->No;
+                    isDataChanged = true;
+                }
+                if(sInfo->Name.compare(s->Name) != 0) {
+                    s->Name = sInfo->Name;
+                    isDataChanged = true;
+                }
+                if(sInfo->Faculty.compare(s->Faculty) != 0) {
+                    s->Faculty = sInfo->Faculty;
+                    isDataChanged = true;
+                }
+
+                delete sInfo;
+
+            }
+            else {
+
+                LocalSInfo[sInfo->No] = sInfo;
+                isDataChanged = true;
+
+            }
+
         }
 
     }
@@ -719,6 +743,7 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
         for(auto it = sInfoDeleting.begin(); it != sInfoDeleting.end(); it++) {
             string no = *it;
             LocalSInfo.erase(no);
+            isDataChanged = true;
         }
 
     }
@@ -727,13 +752,39 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
         for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) {
             SeedSInfo* sInfo = *it;
-            RemoteSInfo[sInfo->No] = sInfo;
+
+            if(RemoteSInfo.count(sInfo->No) == 1) {
+
+                SeedSInfo* s = RemoteSInfo.find(sInfo->No)->second;
+                if(sInfo->No.compare(s->No) != 0) {
+                    s->No = sInfo->No;
+                    isDataChanged = true;
+                }
+                if(sInfo->Name.compare(s->Name) != 0) {
+                    s->Name = sInfo->Name;
+                    isDataChanged = true;
+                }
+                if(sInfo->Faculty.compare(s->Faculty) != 0) {
+                    s->Faculty = sInfo->Faculty;
+                    isDataChanged = true;
+                }
+
+                delete sInfo;
+
+            }
+            else {
+
+                RemoteSInfo[sInfo->No] = sInfo;
+                isDataChanged = true;
+
+            }
+
         }
 
     }
 
     // FIXME: Cause crashes.
-    OutputSInfo();
+    if(isDataChanged) OutputSInfo();
 
     CLEAN_SESSION:
 
