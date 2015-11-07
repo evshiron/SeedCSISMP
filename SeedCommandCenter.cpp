@@ -442,6 +442,8 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
     list<SeedSInfo*> sInfoAdding;
     list<string> sInfoDeleting;
 
+    uint8_t expectedType = TLV_TYPE_NO;
+
     string no;
     string name;
     string faculty;
@@ -460,6 +462,14 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
 
             switch(tlvs[i]) {
                 case TLV_TYPE_NO:
+
+                    if(tlvs[i] != expectedType) {
+
+                        RejectSession(session, 0, "REJECT_TLV_DISORDER");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
 
                     if(tlvs[i+1] > LENGTH_TLV_NO) {
 
@@ -481,9 +491,19 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                     cout << "No (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                     i += 1 + tlvs[i+1];
 
+                    expectedType = TLV_TYPE_NAME;
+
                     break;
 
                 case TLV_TYPE_NAME:
+
+                    if(tlvs[i] != expectedType) {
+
+                        RejectSession(session, 0, "REJECT_TLV_DISORDER");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
 
                     if(tlvs[i+1] > LENGTH_TLV_NAME) {
 
@@ -505,9 +525,19 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                     cout << "Name (" << (int) tlvs[i+1] <<  "): " << &tlvs[i+2] << endl;
                     i += 1 + tlvs[i+1];
 
+                    expectedType = TLV_TYPE_FACULTY;
+
                     break;
 
                 case TLV_TYPE_FACULTY:
+
+                    if(tlvs[i] != expectedType) {
+
+                        RejectSession(session, 0, "REJECT_TLV_DISORDER");
+                        for(auto it = sInfoAdding.begin(); it != sInfoAdding.end(); it++) delete (*it);
+                        return false;
+
+                    }
 
                     if(tlvs[i+1] > LENGTH_TLV_FACULTY) {
 
@@ -542,6 +572,8 @@ void SeedCommandCenter::Collect(SeedSession* session, char* tlvs) {
                     }
 
                     sInfoAdding.push_back(new SeedSInfo(no, name, faculty));
+
+                    expectedType = TLV_TYPE_FACULTY;
 
                     break;
 
