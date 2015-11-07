@@ -228,9 +228,16 @@ void SeedCommandCenter::listen() {
 
             case 1:
 
-                cout << "Pcap captured." << endl;
+                if(header->len > sizeof(SeedPacket)) {
+
+                    cout << "INFO_PACKET_SKIP" << endl;
+                    continue;
+
+                }
 
                 if(header->caplen < header->len) FATAL("ERROR_CAPTURE_PART");
+
+                cout << "Pcap captured." << endl;
 
                 //u_char copy[sizeof(SeedPacket)];
                 //memcpy(copy, data, header->len);
